@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta charset="UTF-8" />
+  <title>Rejestr aut</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-800 p-8 font-sans">
+  <div class="max-w-7xl mx-auto bg-white dark:bg-gray-400 p-6 rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-4 text-center">🚗 Rejestr samochodów</h1>
+
+<button onclick="eksportujJSON()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition mb-4">
+  💾 Eksportuj dane do JSON
+</button>
+    
+<!-- Formularz dodawania auta -->
+    <h2 class="text-lg font-semibold mt-4 mb-2">Dodaj nowe auto</h2>
+    <div class="flex flex-col md:flex-row gap-2 mb-4 dark:bg-gray-800 p-4 rounded-lg">
+  <input id="rejestracja" type="text" placeholder="Numer rejestracyjny" 
+         class="border p-2 rounded w-full text-gray-800 dark:text-white dark:placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600" />
+  
+  <input id="marka" type="text" placeholder="Marka" 
+         class="border p-2 rounded w-full text-gray-800 dark:text-white dark:placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600" />
+  
+  <input id="model" type="text" placeholder="Model" 
+         class="border p-2 rounded w-full text-gray-800 dark:text-white dark:placeholder-gray-400 dark:bg-gray-700 dark:border-gray-600" />
+  
+  <button onclick="dodajAuto()" 
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+    Dodaj auto
+  </button>
+</div>
+    <!-- Formularz dodawania wpisu -->
+    <h2 class="text-lg font-semibold mt-4 mb-2">Dodaj wpis</h2>
+<div id="wybrane-auto-info" class="text-sm text-gray-400 italic mb-2"></div>
+<div class="flex flex-col md:flex-row gap-2 mb-4 bg-gray-800 p-4 rounded-lg">
+  <input id="wpis-data" type="date" class="border border-gray-600 p-2 rounded w-full bg-gray-700 text-white placeholder-gray-400" />
+  <input id="wpis-opis" type="text" placeholder="Opis" class="border border-gray-600 p-2 rounded w-full bg-gray-700 text-white placeholder-gray-400" />
+  <select id="wpis-typ" class="border border-gray-600 p-2 rounded w-full bg-gray-700 text-white placeholder-gray-400">
+    <option value="przegląd">🛠️ Przegląd</option>
+    <option value="naprawa">🔧 Naprawa</option>
+  </select>
+  <button onclick="dodajWpisZFormularza()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+    ➕ Dodaj wpis
+  </button>
+</div>
+    <!-- Filtry -->
+    <h2 class="text-lg font-semibold mt-6 mb-2">Lista aut</h2>
+    <input id="szukaj" type="text" placeholder="Szukaj po rejestracji..."
+  class="bg-gray-800 border border-gray-700 text-white placeholder-gray-400 p-2 rounded w-full mb-4"
+  oninput="pokazAuta()" />
+    <div id="listaAut" class="space-y-4"></div>
+  </div>
+
+  <script>
+    let auta = JSON.parse(localStorage.getItem("auta") || "[]");
+    let wybraneAutoId = null;
+
+    function zapiszAuta() {
+      localStorage.setItem("auta", JSON.stringify(auta));
+    }
+
+    function dodajAuto() {
+  const rejestracja = document.getElementById("rejestracja").value.trim().toUpperCase();
+  const marka = document.getElementById("marka").value.trim();
+  const model = document.getElementById("model").value.trim();
+  
+  if (!rejestracja || !marka || !model) return alert("Wypełnij wszystkie pola!");
+
+  // Sprawdź, czy taka rejestracja już istnieje (ignorując wielkość liter)
+  const istnieje = auta.some(a => a.rejestracja.toUpperCase() === rejestracja);
+  if (istnieje) return alert("Auto z taką rejestracją już istnieje!");
+
+  auta.push({ id: Date.now(), rejestracja, marka, model, wpisy: [] });
+  zapiszAuta();
+  pokazAuta();
+
+  document.getElementById("rejestracja").value = "";
+  document.getElementById("marka").value = "";
+  document.getElementById("model").value = "";    }
+
+    function dodajWpis(autoId) {
+      wybraneAutoId = autoId;
+      const auto = auta.find(a => a.id === autoId);
+      document.getElementById("wybrane-auto-info").innerText = `Dodajesz wpis do auta: ${auto.rejestracja}`;
+    }
+
+    function dodajWpisZFormularza() {
+      if (!wybraneAutoId) return alert("Najpierw wybierz auto klikając \"➕ wpis\" przy pojeździe.");
+
+      const data = document.getElementById("wpis-data").value;
+      const opis = document.getElementById("wpis-opis").value.trim();
+      const typ = document.getElementById("wpis-typ").value;
+      if (!data || !opis || !typ) return alert("Wypełnij wszystkie pola!");
+
+      const auto = auta.find(a => a.id === wybraneAutoId);
+      auto.wpisy.push({ id: Date.now(), data, opis, typ });
+      zapiszAuta();
+      pokazAuta();
+
+      document.getElementById("wpis-data").value = "";
+      document.getElementById("wpis-opis").value = "";
+      wybraneAutoId = null;
+      document.getElementById("wybrane-auto-info").innerText = "";
+    }
+
+    function edytujAuto(id) {
+      const auto = auta.find(a => a.id === id);
+      const nowaRej = prompt("Nowa rejestracja:", auto.rejestracja);
+      const nowaMarka = prompt("Nowa marka:", auto.marka);
+      const nowyModel = prompt("Nowy model:", auto.model);
+      if (nowaRej && nowaMarka && nowyModel) {
+        auto.rejestracja = nowaRej;
+        auto.marka = nowaMarka;
+        auto.model = nowyModel;
+        zapiszAuta();
+        pokazAuta();
+      }
+    }
+
+    function usunAuto(id) {
+      if (confirm("Na pewno usunąć to auto?")) {
+        auta = auta.filter(a => a.id !== id);
+        zapiszAuta();
+        pokazAuta();
+      }
+    }
+
+    function edytujWpis(autoId, wpisId) {
+      const auto = auta.find(a => a.id === autoId);
+      const wpis = auto.wpisy.find(w => w.id === wpisId);
+      const nowyOpis = prompt("Nowy opis:", wpis.opis);
+      const nowaData = prompt("Nowa data (rrrr-mm-dd):", wpis.data);
+      if (nowyOpis && nowaData) {
+        wpis.opis = nowyOpis;
+        wpis.data = nowaData;
+        zapiszAuta();
+        pokazAuta();
+      }
+    }
+
+    function usunWpis(autoId, wpisId) {
+      const auto = auta.find(a => a.id === autoId);
+      auto.wpisy = auto.wpisy.filter(w => w.id !== wpisId);
+      zapiszAuta();
+      pokazAuta();
+    }
+
+    function pokazAuta() {
+  const container = document.getElementById("listaAut");
+  container.innerHTML = "";
+
+  const filtr = document.getElementById("szukaj")?.value.toLowerCase() || "";
+  auta
+    .filter(auto => auto.rejestracja.toLowerCase().includes(filtr))
+    .forEach(auto => {
+      const div = document.createElement("div");
+      div.className = "bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-sm text-white";
+
+      const wpisyHTML = auto.wpisy.map(w => `
+        <li class="text-sm text-gray-700 flex justify-between items-center">
+          <div>📅 ${w.data.split("-").reverse().join(".")} •
+            <span class="${w.typ === 'przegląd' ? 'text-green-600' : 'text-blue-600'} font-semibold">${w.typ}</span>: ${w.opis}
+          </div>
+          <div class="flex gap-1">
+            <button onclick="edytujWpis(${auto.id}, ${w.id})" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition">✏️ Edytuj wpis</button>
+            <button onclick="usunWpis(${auto.id}, ${w.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition">🗑️ Usuń wpis</button>
+          </div>
+        </li>
+      `).join("");
+
+      div.innerHTML = `
+  <div class="flex justify-between items-center">
+    <div>
+      <h3 class="font-bold text-lg">${auto.rejestracja}</h3>
+      <p class="text-gray-600">${auto.marka} ${auto.model}</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="dodajWpis(${auto.id})" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition">➕ Wpis</button>
+      <button onclick="toggleWpisy(${auto.id})" class="bg-gray-300 text-sm text-black px-3 py-1 rounded hover:bg-gray-400 transition">📂 Pokaż/Ukryj wpisy</button>
+      <button onclick="edytujAuto(${auto.id})" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition">✏️ Edytuj auto</button>
+      <button onclick="usunAuto(${auto.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition">🗑️ Usuń auto</button>
+    </div>
+  </div>
+  <ul id="wpisy-${auto.id}" class="mt-2 list-disc list-inside space-y-1 hidden">${wpisyHTML}</ul>
+`;
+      container.appendChild(div);
+    });
+}
+
+function toggleWpisy(autoId) {
+  const el = document.getElementById(`wpisy-${autoId}`);
+  if (el) el.classList.toggle("hidden");
+}    
+pokazAuta();
+ function eksportujJSON() {
+  const dane = JSON.stringify(auta, null, 2);
+  const blob = new Blob([dane], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "rejestr_aut.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+} 
+</script>
+</body>
+</html>
