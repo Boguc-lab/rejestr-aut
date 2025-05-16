@@ -8,6 +8,16 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-800 p-8 font-sans">
+  <script>
+  const haslo = "tajne123"; // <-- Ustaw tutaj własne hasło
+
+  const wpisane = prompt("Podaj hasło dostępu:");
+
+  if (wpisane !== haslo) {
+    document.body.innerHTML = "<h1 style='color: red; text-align: center;'>Błędne hasło. Dostęp zabroniony.</h1>";
+    throw new Error("Niepoprawne hasło");
+  }
+</script>
   <div class="max-w-7xl mx-auto bg-white dark:bg-gray-400 p-6 rounded-lg shadow">
     <h1 class="text-2xl font-bold mb-4 text-center">🚗 Rejestr samochodów</h1>
 
